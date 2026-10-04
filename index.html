@@ -1,191 +1,661 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Dota Guess</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dotadle — угадай героя Dota 2</title>
+<meta name="description" content="Ежедневная игра: угадай героя Dota 2 по признакам.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
+:root {
+  --bg: #0a0d14;
+  --panel: #131927;
+  --panel-2: #1b2335;
+  --line: #2a3550;
+  --text: #e8ecf4;
+  --muted: #8d98b3;
+  --gold: #e3b45a;
+  --red-accent: #c23c2a;
+  --green: #2f9e57;
+  --yellow: #d4a72c;
+  --wrong: #a8322b;
+  --cell: 78px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
 body {
-  background:#0b1020;
-  color:white;
-  font-family:Arial;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-start;
-  height:100vh;
-  margin:0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 50% -200px, rgba(194,60,42,.35), transparent 70%),
+    radial-gradient(800px 400px at 100% 100%, rgba(227,180,90,.08), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+button { font: inherit; color: inherit; cursor: pointer; }
 
-h1 {
-  margin-top:20px;
+/* ---------- Header ---------- */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 960px; margin: 0 auto; padding: 16px;
 }
-
-input {
-  padding:12px;
-  width:260px;
-  border-radius:8px;
-  border:none;
-  font-size:16px;
-  margin-top:10px;
+.logo {
+  font-family: Cinzel, Georgia, serif; font-weight: 900;
+  font-size: clamp(28px, 6vw, 44px); letter-spacing: 2px;
+  background: linear-gradient(180deg, #ffe2a3, var(--gold) 45%, #8a5a1c);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 2px 20px rgba(227,180,90,.25);
+  margin: 0;
 }
+.icon-btns { display: flex; gap: 8px; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--panel); border: 1px solid var(--line);
+  display: grid; place-items: center; font-size: 18px;
+  transition: background .15s, border-color .15s;
+}
+.icon-btn:hover { background: var(--panel-2); border-color: var(--gold); }
 
+main { max-width: 960px; margin: 0 auto; padding: 0 16px 48px; }
+
+/* ---------- Mode tabs ---------- */
+.tabs {
+  display: flex; gap: 6px; justify-content: center;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 4px; width: fit-content; margin: 0 auto 16px;
+}
+.tab {
+  border: none; background: transparent; padding: 8px 16px; border-radius: 9px;
+  font-weight: 600; color: var(--muted);
+}
+.tab.active { background: linear-gradient(180deg, #d0492f, #9a2c1f); color: #fff; }
+
+.card {
+  background: linear-gradient(180deg, rgba(27,35,53,.9), rgba(19,25,39,.9));
+  border: 1px solid var(--line); border-radius: 16px;
+  padding: 18px; max-width: 520px; margin: 0 auto 16px; text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+.card h2 { margin: 0 0 4px; font-size: 18px; }
+.card p { margin: 0; color: var(--muted); font-size: 14px; }
+
+/* ---------- Search ---------- */
+.search { position: relative; margin-top: 14px; display: flex; gap: 8px; }
+.search input {
+  flex: 1; min-width: 0; padding: 13px 14px; font-size: 16px;
+  border-radius: 10px; border: 1px solid var(--line);
+  background: #0d121d; color: var(--text); outline: none;
+}
+.search input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(227,180,90,.15); }
+.search .go {
+  border: none; border-radius: 10px; padding: 0 18px; font-weight: 800;
+  background: linear-gradient(180deg, #f0c56c, #b07e2a); color: #1a1206;
+}
+.search .go:disabled { opacity: .5; cursor: default; }
 .suggestions {
-  width:260px;
-  background:#1a2238;
-  border-radius:8px;
-  margin-top:5px;
-  overflow:hidden;
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 20;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px;
+  overflow-y: auto; max-height: 320px; text-align: left;
+  box-shadow: 0 16px 40px rgba(0,0,0,.5);
+}
+.suggestions:empty { display: none; }
+.suggestion { display: flex; align-items: center; gap: 12px; padding: 8px 12px; cursor: pointer; }
+.suggestion.active, .suggestion:hover { background: #2a3654; }
+.suggestion .name { font-weight: 600; }
+.suggestion .ru { color: var(--muted); font-size: 13px; }
+
+.portrait {
+  width: 56px; height: 32px; border-radius: 4px; object-fit: cover; flex: none;
+  background: #222b40;
+}
+.fallback {
+  display: grid; place-items: center; font-weight: 800; font-size: 13px; color: var(--gold);
 }
 
-.suggestion {
-  padding:10px;
-  display:flex;
-  align-items:center;
-  cursor:pointer;
+.hints { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+.hint {
+  font-size: 13px; padding: 6px 10px; border-radius: 999px;
+  background: #0d121d; border: 1px dashed var(--line); color: var(--muted);
 }
+.hint.open { border-style: solid; border-color: var(--gold); color: var(--text); cursor: pointer; }
+.hint-reveal { margin-top: 10px; font-size: 15px; }
+.hint-reveal img { width: 160px; border-radius: 8px; filter: blur(9px) grayscale(1); transform: scale(1.02); }
+.hint-img-wrap { display: inline-block; overflow: hidden; border-radius: 8px; }
 
-.suggestion:hover {
-  background:#2d3a63;
+.giveup { margin-top: 12px; background: none; border: none; color: var(--muted); font-size: 13px; text-decoration: underline; }
+
+/* ---------- Board ---------- */
+.board-wrap { overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+.board { width: max-content; margin: 0 auto; }
+.row { display: flex; gap: 6px; margin-bottom: 6px; }
+.head .cell {
+  height: auto; min-height: 0; background: none; border: none; box-shadow: none;
+  color: var(--muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0;
+  border-bottom: 2px solid var(--line); border-radius: 0; padding: 4px 2px;
 }
-
-.suggestion img {
-  width:32px;
-  margin-right:10px;
-}
-
-.table {
-  margin-top:20px;
-}
-
-.row {
-  display:flex;
-  justify-content:center;
-}
-
 .cell {
-  width:130px;
-  padding:12px;
-  margin:4px;
-  border-radius:8px;
-  font-weight:bold;
-  text-align:center;
+  width: var(--cell); min-height: var(--cell);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 4px; border-radius: 10px; text-align: center;
+  font-size: 11px; font-weight: 700; line-height: 1.2;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.25);
+  overflow-wrap: anywhere; hyphens: auto;
+}
+.cell.hero { padding: 0; overflow: hidden; background: #222b40; position: relative; }
+.cell.hero img { width: 100%; height: 100%; object-fit: cover; }
+.cell.hero .tip {
+  position: absolute; inset: auto 0 0 0; background: rgba(0,0,0,.7);
+  font-size: 10px; padding: 2px; font-weight: 600;
+}
+.cell.ok { background: linear-gradient(180deg, #38b766, var(--green)); }
+.cell.part { background: linear-gradient(180deg, #e6bb3c, var(--yellow)); color: #1d1503; }
+.cell.bad { background: linear-gradient(180deg, #bf3b33, var(--wrong)); }
+.cell .arrow { font-size: 20px; line-height: 1; margin-top: 2px; }
+.cell .roles { font-size: 10px; font-weight: 600; }
+.flip { animation: flip .5s ease both; }
+@keyframes flip {
+  from { transform: rotateX(90deg); opacity: 0; }
+  to { transform: rotateX(0); opacity: 1; }
 }
 
-.green { background:#22c55e; }
-.yellow { background:#facc15; color:black; }
-.red { background:#ef4444; }
-
-.header .cell {
-  background:#1a2238;
+.legend { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin: 10px 0 16px; }
+.legend span::before {
+  content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px;
+  margin-right: 6px; vertical-align: -2px; background: var(--c);
 }
 
-#win {
-  display:none;
-  margin-top:20px;
-  font-size:24px;
+/* ---------- Win ---------- */
+.result { display: none; }
+.result.show { display: block; animation: pop .4s ease; }
+@keyframes pop { from { transform: scale(.95); opacity: 0; } to { transform: none; opacity: 1; } }
+.result .big-portrait { width: 180px; max-width: 60%; aspect-ratio: 256 / 144; object-fit: cover; border-radius: 10px; margin: 8px auto; display: block; border: 2px solid var(--gold); background: #222b40; }
+.result .big-portrait.fallback { font-size: 40px; display: grid; }
+.result h2 { font-family: Cinzel, Georgia, serif; font-size: 24px; color: var(--gold); }
+.result .actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+.btn {
+  border: none; border-radius: 10px; padding: 10px 16px; font-weight: 700;
+  background: var(--panel-2); border: 1px solid var(--line);
+}
+.btn.primary { background: linear-gradient(180deg, #f0c56c, #b07e2a); color: #1a1206; border: none; }
+.countdown { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.countdown b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* ---------- Modal ---------- */
+.modal {
+  position: fixed; inset: 0; z-index: 50; display: none;
+  background: rgba(3,5,10,.7); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center; padding: 16px;
+}
+.modal.show { display: flex; }
+.modal-box {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+  max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 22px; position: relative;
+}
+.modal-box h3 { margin: 0 0 12px; font-family: Cinzel, Georgia, serif; color: var(--gold); }
+.modal-box p, .modal-box li { color: #c9d1e3; font-size: 14px; line-height: 1.5; }
+.modal-box ul { padding-left: 18px; }
+.close { position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 22px; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
+.stats b { display: block; font-size: 26px; }
+.stats span { font-size: 11px; color: var(--muted); }
+.dist { margin-top: 16px; }
+.dist-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
+.dist-row .bar { background: var(--panel-2); border-radius: 4px; padding: 2px 6px; text-align: right; min-width: 22px; font-weight: 700; }
+.dist-row .bar.hl { background: var(--green); }
+
+.toast {
+  position: fixed; left: 50%; top: 20px; transform: translateX(-50%) translateY(-80px);
+  background: var(--text); color: #111; padding: 10px 16px; border-radius: 10px; font-weight: 700;
+  transition: transform .25s; z-index: 60;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 16px 24px; }
+
+@media (max-width: 560px) {
+  :root { --cell: 70px; }
+  .cell { font-size: 10px; padding: 3px; }
+  .row { gap: 4px; }
 }
 </style>
 </head>
-
 <body>
 
-<h1>Угадай героя Dota 2</h1>
+<header>
+  <h1 class="logo">DOTADLE</h1>
+  <div class="icon-btns">
+    <button class="icon-btn" id="helpBtn" title="Как играть" aria-label="Как играть">?</button>
+    <button class="icon-btn" id="statsBtn" title="Статистика" aria-label="Статистика">📊</button>
+  </div>
+</header>
 
-<input id="input" placeholder="Начни вводить..." oninput="showSuggestions()">
-<div id="suggestions" class="suggestions"></div>
+<main>
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-mode="daily">Герой дня</button>
+    <button class="tab" data-mode="endless">Бесконечный</button>
+  </div>
 
-<div class="table" id="board">
-  <div class="row header">
-    <div class="cell">Имя</div>
-    <div class="cell">Атрибут</div>
-    <div class="cell">Атака</div>
+  <section class="card" id="playCard">
+    <h2 id="modeTitle">Угадай сегодняшнего героя Dota 2</h2>
+    <p id="modeSub">Вводи имя героя — клетки подскажут, насколько ты близко.</p>
+    <div class="search">
+      <input id="input" autocomplete="off" spellcheck="false" placeholder="Имя героя (англ. или рус.)…" aria-label="Имя героя">
+      <button class="go" id="goBtn" disabled>➜</button>
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+    <div class="hints" id="hints"></div>
+    <div class="hint-reveal" id="hintReveal"></div>
+    <button class="giveup" id="giveUp" hidden>Сдаться</button>
+  </section>
+
+  <section class="card result" id="result"></section>
+
+  <div class="legend">
+    <span style="--c:var(--green)">совпадает</span>
+    <span style="--c:var(--yellow)">частично</span>
+    <span style="--c:var(--wrong)">не совпадает</span>
+    <span style="--c:transparent">↑↓ больше / меньше</span>
+  </div>
+
+  <div class="board-wrap"><div class="board" id="board"></div></div>
+</main>
+
+<footer>Фанатский проект, не связан с Valve. Dota 2 — товарный знак Valve Corporation.</footer>
+
+<div class="modal" id="helpModal">
+  <div class="modal-box">
+    <button class="close" data-close>×</button>
+    <h3>Как играть</h3>
+    <p>Угадай загаданного героя Dota 2. После каждой попытки каждая клетка показывает, совпадает ли признак твоего героя с загаданным.</p>
+    <ul>
+      <li><b style="color:#4ad07f">Зелёный</b> — признак совпадает полностью.</li>
+      <li><b style="color:#e6bb3c">Жёлтый</b> — совпадает частично (например, есть общие роли).</li>
+      <li><b style="color:#e0574e">Красный</b> — не совпадает.</li>
+      <li><b>↑ / ↓</b> — у загаданного героя значение больше / меньше.</li>
+    </ul>
+    <p><b>Признаки:</b> пол, раса, основной атрибут, тип атаки, роли, дальность атаки, скорость передвижения и количество ног.</p>
+    <p><b>Подсказки:</b> после 5 попыток открывается первая буква имени, после 8 — размытый портрет.</p>
+    <p><b>Герой дня</b> одинаков для всех и меняется в полночь. В режиме <b>Бесконечный</b> можно играть сколько угодно.</p>
   </div>
 </div>
 
-<div id="win">🎉 Победа!</div>
+<div class="modal" id="statsModal">
+  <div class="modal-box">
+    <button class="close" data-close>×</button>
+    <h3>Статистика (герой дня)</h3>
+    <div class="stats" id="statsGrid"></div>
+    <div class="dist" id="dist"></div>
+  </div>
+</div>
 
+<div class="toast" id="toast"></div>
+
+<script src="extraData.js"></script>
 <script>
-let heroes=[];
-let answer;
+(() => {
+  const HEROES = window.HEROES.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const byId = new Map(HEROES.map(h => [h.id, h]));
+  const CDN = "https://cdn.cloudflare.steamstatic.com";
 
-function translateAttr(attr){
-  if(attr==="str") return "strength";
-  if(attr==="agi") return "agility";
-  if(attr==="int") return "intelligence";
-  return attr;
-}
+  const ATTR = { str: "Сила", agi: "Ловкость", int: "Интеллект", all: "Универсал" };
+  const ATTACK = { Melee: "Ближний бой", Ranged: "Дальний бой" };
+  const GENDER = { M: "Мужской", F: "Женский", N: "Нет" };
+  const ROLE = {
+    Carry: "Керри", Support: "Саппорт", Nuker: "Нюкер", Disabler: "Контроль",
+    Initiator: "Инициатор", Durable: "Танк", Escape: "Эскейп", Pusher: "Пушер",
+  };
+  const COLUMNS = ["Герой", "Пол", "Раса", "Атрибут", "Атака", "Роли", "Дальность", "Скорость", "Ноги"];
+  const MAX_SUGGEST = 8;
 
-async function loadHeroes(){
-  let res=await fetch("https://api.opendota.com/api/heroStats");
-  let data=await res.json();
+  // ---------- storage (best effort) ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
 
-  heroes=data.map(h=>({
-    name:h.localized_name.toLowerCase(),
-    attr:translateAttr(h.primary_attr),
-    attack:h.attack_type.toLowerCase(),
-    img:"https://cdn.cloudflare.steamstatic.com"+h.img
-  }));
+  // ---------- daily hero ----------
+  function mulberry32(a) {
+    return () => {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function dayNumber(d = new Date()) {
+    return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+  }
+  // Fixed shuffled order of hero ids; each day takes the next one so heroes don't repeat for ~4 months.
+  const dailyOrder = (() => {
+    const ids = HEROES.map(h => h.id).sort((a, b) => a - b);
+    const rnd = mulberry32(20240527);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    return ids;
+  })();
+  const dailyHero = day => byId.get(dailyOrder[day % dailyOrder.length]);
 
-  startGame();
-}
+  // ---------- state ----------
+  let mode = store.get("dotadle.mode", "daily");
+  let answer, guesses, finished, gaveUp;
+  const today = dayNumber();
 
-function startGame(){
-  answer=heroes[Math.floor(Math.random()*heroes.length)];
-  board.innerHTML=`
-  <div class="row header">
-    <div class="cell">Имя</div>
-    <div class="cell">Атрибут</div>
-    <div class="cell">Атака</div>
-  </div>`;
-  win.style.display="none";
-}
-
-function showSuggestions(){
-  let val=input.value.toLowerCase();
-  suggestions.innerHTML="";
-
-  heroes.filter(h=>h.name.includes(val)).slice(0,5).forEach(h=>{
-    let d=document.createElement("div");
-    d.className="suggestion";
-    d.innerHTML=`<img src="${h.img}">${h.name}`;
-    d.onclick=()=>guess(h.name);
-    suggestions.appendChild(d);
-  });
-}
-
-function partial(a,b){
-  // для будущего расширения (сейчас почти не используется)
-  return false;
-}
-
-function color(a,b){
-  if(a===b) return "green";
-  if(partial(a,b)) return "yellow";
-  return "red";
-}
-
-function guess(name){
-  let hero=heroes.find(h=>h.name===name);
-
-  let row=document.createElement("div");
-  row.className="row";
-
-  row.innerHTML+=`<div class="cell ${color(hero.name,answer.name)}">${hero.name}</div>`;
-  row.innerHTML+=`<div class="cell ${color(hero.attr,answer.attr)}">${hero.attr}</div>`;
-  row.innerHTML+=`<div class="cell ${color(hero.attack,answer.attack)}">${hero.attack}</div>`;
-
-  board.appendChild(row);
-
-  if(hero.name===answer.name){
-    win.style.display="block";
+  function loadMode() {
+    if (mode === "daily") {
+      answer = dailyHero(today);
+      const saved = store.get("dotadle.daily", null);
+      guesses = saved && saved.day === today ? saved.guesses : [];
+    } else {
+      const saved = store.get("dotadle.endless", null);
+      if (saved && byId.has(saved.answer) && !saved.finished) {
+        answer = byId.get(saved.answer);
+        guesses = saved.guesses;
+      } else {
+        newEndless();
+        return;
+      }
+    }
+    gaveUp = false;
+    finished = guesses.includes(answer.id);
+    render(false);
   }
 
-  input.value="";
-}
+  function newEndless() {
+    const prev = answer && answer.id;
+    let h;
+    do { h = HEROES[Math.floor(Math.random() * HEROES.length)]; } while (HEROES.length > 1 && h.id === prev);
+    answer = h; guesses = []; finished = false; gaveUp = false;
+    saveState();
+    render(false);
+  }
 
-loadHeroes();
+  function saveState() {
+    if (mode === "daily") store.set("dotadle.daily", { day: today, guesses });
+    else store.set("dotadle.endless", { answer: answer.id, guesses, finished });
+  }
+
+  // ---------- comparison ----------
+  function compare(h) {
+    const a = answer;
+    const shared = h.roles.filter(r => a.roles.includes(r)).length;
+    const sameRoles = shared === a.roles.length && shared === h.roles.length;
+    const num = (x, y) => ({ cls: x === y ? "ok" : "bad", arrow: x === y ? "" : (y > x ? "↑" : "↓") });
+    return [
+      { cls: h.gender === a.gender ? "ok" : "bad", text: GENDER[h.gender] },
+      { cls: h.species === a.species ? "ok" : "bad", text: h.species },
+      { cls: h.attr === a.attr ? "ok" : "bad", text: ATTR[h.attr] },
+      { cls: h.attack === a.attack ? "ok" : "bad", text: ATTACK[h.attack] },
+      { cls: sameRoles ? "ok" : shared ? "part" : "bad", html: `<span class="roles">${h.roles.map(r => ROLE[r] || r).join(", ")}</span>` },
+      { ...num(h.range, a.range), text: h.range },
+      { ...num(h.speed, a.speed), text: h.speed },
+      { ...num(h.legs, a.legs), text: h.legs },
+    ];
+  }
+
+  // ---------- rendering ----------
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  function portrait(h, cls = "portrait") {
+    return `<img class="${cls}" src="${CDN}${h.img}" alt="${esc(h.name)}" loading="lazy"
+      onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'${cls} fallback',textContent:'${esc(h.name.slice(0, 2).toUpperCase())}'}))">`;
+  }
+
+  function rowHtml(id, animate) {
+    const h = byId.get(id);
+    const cells = compare(h);
+    const delay = i => animate ? ` style="animation-delay:${i * 0.12}s"` : "";
+    const anim = animate ? " flip" : "";
+    let out = `<div class="row"><div class="cell hero${anim}">${portrait(h, "")}<div class="tip">${esc(h.name)}</div></div>`;
+    cells.forEach((c, i) => {
+      const body = c.html || esc(c.text);
+      out += `<div class="cell ${c.cls}${anim}"${delay(i + 1)}>${body}${c.arrow ? `<span class="arrow">${c.arrow}</span>` : ""}</div>`;
+    });
+    return out + "</div>";
+  }
+
+  function render(animateLast) {
+    $("board").innerHTML = guesses.length
+      ? `<div class="row head">${COLUMNS.map(c => `<div class="cell">${c}</div>`).join("")}</div>` +
+        guesses.slice().reverse().map((id, i) => rowHtml(id, animateLast && i === 0)).join("")
+      : "";
+
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.mode === mode));
+    $("modeTitle").textContent = mode === "daily" ? "Угадай сегодняшнего героя Dota 2" : "Бесконечный режим";
+    $("modeSub").textContent = mode === "daily"
+      ? "Новый герой каждый день. Вводи имя — клетки подскажут, насколько ты близко."
+      : "Случайный герой каждую игру. Тренируйся сколько хочешь!";
+
+    const done = finished || gaveUp;
+    $("input").disabled = done;
+    $("input").placeholder = done ? "Игра окончена" : "Имя героя (англ. или рус.)…";
+    $("giveUp").hidden = done || mode !== "endless" || guesses.length === 0;
+    renderHints(done);
+    if (done) showResult(animateLast);
+    else $("result").classList.remove("show");
+  }
+
+  function renderHints(done) {
+    const n = guesses.length;
+    const hints = [
+      { at: 5, label: "Первая буква", key: "letter" },
+      { at: 8, label: "Размытый портрет", key: "image" },
+    ];
+    $("hints").innerHTML = done ? "" : hints.map(h => n >= h.at
+      ? `<button class="hint open" data-hint="${h.key}">💡 ${h.label}</button>`
+      : `<span class="hint">🔒 ${h.label} — через ${h.at - n}</span>`).join("");
+    $("hintReveal").innerHTML = "";
+  }
+
+  $("hints").addEventListener("click", e => {
+    const b = e.target.closest("[data-hint]");
+    if (!b) return;
+    $("hintReveal").innerHTML = b.dataset.hint === "letter"
+      ? `Имя героя начинается на <b style="color:var(--gold)">${esc(answer.name[0])}</b> (рус.: <b style="color:var(--gold)">${esc(answer.ru[0])}</b>)`
+      : `<span class="hint-img-wrap">${portrait(answer, "")}</span>`;
+  });
+
+  function showResult(delayed) {
+    const box = $("result");
+    const n = guesses.length;
+    const won = finished;
+    box.innerHTML = `
+      <h2>${won ? "Победа!" : "Это был…"}</h2>
+      ${portrait(answer, "big-portrait")}
+      <div style="font-size:20px;font-weight:800">${esc(answer.name)}</div>
+      <p style="margin-top:4px">${esc(answer.ru)}</p>
+      <p style="margin-top:10px">${won ? `Угадано с <b style="color:var(--text)">${n}</b> ${plural(n, "попытки", "попыток", "попыток")}` : "Повезёт в следующий раз!"}</p>
+      <div class="actions">
+        ${mode === "daily" && won ? `<button class="btn primary" id="shareBtn">Поделиться</button>` : ""}
+        ${mode === "endless" ? `<button class="btn primary" id="againBtn">Новый герой</button>` : `<button class="btn" id="toEndless">Играть в бесконечном</button>`}
+      </div>
+      ${mode === "daily" ? `<div class="countdown">Следующий герой через <b id="cd"></b></div>` : ""}`;
+    const show = () => { box.classList.add("show"); box.scrollIntoView({ behavior: "smooth", block: "center" }); };
+    delayed ? setTimeout(show, 1200) : box.classList.add("show");
+    const share = $("shareBtn"), again = $("againBtn"), toEndless = $("toEndless");
+    if (share) share.onclick = shareResult;
+    if (again) again.onclick = () => { newEndless(); $("input").focus(); };
+    if (toEndless) toEndless.onclick = () => setMode("endless");
+    tickCountdown();
+  }
+
+  function plural(n, one, few, many) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+    return many;
+  }
+
+  function tickCountdown() {
+    const el = $("cd");
+    if (!el) return;
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const s = Math.max(0, Math.floor((next - now) / 1000));
+    const p = x => String(x).padStart(2, "0");
+    el.textContent = `${p(Math.floor(s / 3600))}:${p(Math.floor(s % 3600 / 60))}:${p(s % 60)}`;
+    if (s === 0) location.reload();
+  }
+  setInterval(tickCountdown, 1000);
+
+  function shareResult() {
+    const emoji = { ok: "🟩", part: "🟨", bad: "🟥" };
+    const lines = guesses.map(id => compare(byId.get(id)).map(c => emoji[c.cls]).join(""));
+    const text = `Dotadle #${today - dayNumber(new Date(2024, 0, 1)) + 1} — ${guesses.length} ${plural(guesses.length, "попытка", "попытки", "попыток")}\n` +
+      lines.slice(0, 10).join("\n") + (lines.length > 10 ? "\n…" : "") + `\n${location.href.split("#")[0]}`;
+    const done = () => toast("Результат скопирован!");
+    if (navigator.share && /Mobi/i.test(navigator.userAgent)) {
+      navigator.share({ text }).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text));
+    } else fallbackCopy(text);
+  }
+  function fallbackCopy(text) {
+    const t = document.createElement("textarea");
+    t.value = text; document.body.appendChild(t); t.select();
+    try { document.execCommand("copy"); toast("Результат скопирован!"); } catch { prompt("Скопируй результат:", text); }
+    t.remove();
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+  }
+
+  // ---------- guessing ----------
+  function guess(id) {
+    if (finished || gaveUp || guesses.includes(id)) return;
+    guesses.push(id);
+    finished = id === answer.id;
+    saveState();
+    if (finished) recordWin();
+    $("input").value = "";
+    closeSuggestions();
+    render(true);
+    if (!finished) $("input").focus();
+  }
+
+  function recordWin() {
+    if (mode !== "daily") return;
+    const s = store.get("dotadle.stats", { played: 0, wins: 0, streak: 0, best: 0, lastDay: null, dist: {} });
+    if (s.lastDay === today) return;
+    s.played++; s.wins++;
+    s.streak = s.lastDay === today - 1 ? s.streak + 1 : 1;
+    s.best = Math.max(s.best, s.streak);
+    s.lastDay = today;
+    const bucket = guesses.length >= 10 ? "10+" : String(guesses.length);
+    s.dist[bucket] = (s.dist[bucket] || 0) + 1;
+    s.total = (s.total || 0) + guesses.length;
+    store.set("dotadle.stats", s);
+  }
+
+  // ---------- autocomplete ----------
+  const norm = s => s.toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]/g, "");
+  let matches = [], active = 0;
+
+  function search(q) {
+    const n = norm(q);
+    if (!n) return [];
+    const scored = [];
+    for (const h of HEROES) {
+      if (guesses.includes(h.id)) continue;
+      const keys = [h.name, h.ru, ...h.aliases].map(norm);
+      let best = Infinity;
+      for (const k of keys) {
+        if (k === n) best = Math.min(best, 0);
+        else if (k.startsWith(n)) best = Math.min(best, 1);
+        else if (k.includes(n)) best = Math.min(best, 2);
+      }
+      // also match start of any word, e.g. "lord" -> "Troll Warlord"
+      if (best > 1 && [h.name, h.ru].some(s => s.toLowerCase().split(/[\s'-]+/).some(w => norm(w).startsWith(n)))) best = 1;
+      if (best < Infinity) scored.push([best, h]);
+    }
+    return scored.sort((a, b) => a[0] - b[0] || a[1].name.localeCompare(b[1].name)).slice(0, MAX_SUGGEST).map(x => x[1]);
+  }
+
+  function showSuggestions() {
+    matches = search($("input").value);
+    active = 0;
+    paintSuggestions();
+  }
+  function paintSuggestions() {
+    $("suggestions").innerHTML = matches.map((h, i) =>
+      `<div class="suggestion${i === active ? " active" : ""}" data-id="${h.id}">
+        ${portrait(h)}<div><div class="name">${esc(h.name)}</div><div class="ru">${esc(h.ru)}</div></div>
+      </div>`).join("");
+    $("goBtn").disabled = !matches.length;
+  }
+  function closeSuggestions() { matches = []; paintSuggestions(); }
+
+  $("input").addEventListener("input", showSuggestions);
+  $("input").addEventListener("keydown", e => {
+    if (e.key === "ArrowDown" && matches.length) { active = (active + 1) % matches.length; paintSuggestions(); e.preventDefault(); }
+    else if (e.key === "ArrowUp" && matches.length) { active = (active - 1 + matches.length) % matches.length; paintSuggestions(); e.preventDefault(); }
+    else if (e.key === "Enter" && matches.length) { guess(matches[active].id); e.preventDefault(); }
+    else if (e.key === "Escape") closeSuggestions();
+  });
+  $("suggestions").addEventListener("mousedown", e => {
+    const s = e.target.closest(".suggestion");
+    if (s) { e.preventDefault(); guess(Number(s.dataset.id)); }
+  });
+  $("goBtn").addEventListener("click", () => { if (matches.length) guess(matches[active].id); });
+  document.addEventListener("click", e => { if (!e.target.closest(".search")) closeSuggestions(); });
+
+  $("giveUp").addEventListener("click", () => {
+    if (!confirm("Сдаться и узнать героя?")) return;
+    gaveUp = true;
+    store.set("dotadle.endless", null);
+    render(false);
+  });
+
+  // ---------- modes & modals ----------
+  function setMode(m) {
+    mode = m;
+    store.set("dotadle.mode", m);
+    $("input").value = "";
+    closeSuggestions();
+    loadMode();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => setMode(t.dataset.mode)));
+
+  function openModal(id) { $(id).classList.add("show"); }
+  document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => {
+    if (e.target === m || e.target.hasAttribute("data-close")) m.classList.remove("show");
+  }));
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") document.querySelectorAll(".modal.show").forEach(m => m.classList.remove("show"));
+  });
+  $("helpBtn").onclick = () => openModal("helpModal");
+  $("statsBtn").onclick = () => {
+    const s = store.get("dotadle.stats", { played: 0, wins: 0, streak: 0, best: 0, lastDay: null, dist: {} });
+    const streak = s.lastDay === today || s.lastDay === today - 1 ? s.streak : 0;
+    const total = s.total || 0;
+    $("statsGrid").innerHTML = [
+      [s.wins, "Побед"], [streak, "Серия"], [s.best, "Лучшая серия"],
+      [s.wins ? (total / s.wins).toFixed(1) : "—", "Ср. попыток"],
+    ].map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join("");
+    const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10+"];
+    const max = Math.max(1, ...keys.map(k => s.dist[k] || 0));
+    const mine = s.lastDay === today ? (guesses.length >= 10 ? "10+" : String(guesses.length)) : null;
+    $("dist").innerHTML = "<p style='margin:0 0 6px'>Распределение попыток</p>" + keys.map(k =>
+      `<div class="dist-row"><span style="width:26px">${k}</span><div class="bar${k === mine ? " hl" : ""}" style="width:${8 + 88 * (s.dist[k] || 0) / max}%">${s.dist[k] || 0}</div></div>`
+    ).join("");
+    openModal("statsModal");
+  };
+
+  if (!store.get("dotadle.seenHelp", false)) { openModal("helpModal"); store.set("dotadle.seenHelp", true); }
+  loadMode();
+})();
 </script>
-
 </body>
 </html>
