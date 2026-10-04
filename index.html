@@ -106,7 +106,6 @@ main { max-width: 960px; margin: 0 auto; padding: 0 16px 48px; }
 .suggestion { display: flex; align-items: center; gap: 12px; padding: 8px 12px; cursor: pointer; }
 .suggestion.active, .suggestion:hover { background: #2a3654; }
 .suggestion .name { font-weight: 600; }
-.suggestion .ru { color: var(--muted); font-size: 13px; }
 
 .portrait {
   width: 56px; height: 32px; border-radius: 4px; object-fit: cover; flex: none;
@@ -116,6 +115,22 @@ main { max-width: 960px; margin: 0 auto; padding: 0 16px 48px; }
   display: grid; place-items: center; font-weight: 800; font-size: 13px; color: var(--gold);
 }
 
+.switch-row {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 12px;
+  font-size: 13px; color: var(--muted); cursor: pointer; user-select: none;
+}
+.switch-row input { position: absolute; opacity: 0; pointer-events: none; }
+.switch {
+  width: 34px; height: 20px; border-radius: 999px; background: var(--line);
+  position: relative; transition: background .2s;
+}
+.switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px;
+  border-radius: 50%; background: #fff; transition: transform .2s;
+}
+.switch-row input:checked + .switch { background: var(--gold); }
+.switch-row input:checked + .switch::after { transform: translateX(14px); }
+.switch-row input:focus-visible + .switch { outline: 2px solid var(--gold); outline-offset: 2px; }
 .hints { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
 .hint {
   font-size: 13px; padding: 6px 10px; border-radius: 999px;
@@ -144,7 +159,7 @@ main { max-width: 960px; margin: 0 auto; padding: 0 16px 48px; }
   font-size: 11px; font-weight: 700; line-height: 1.2;
   border: 1px solid rgba(255,255,255,.12);
   box-shadow: inset 0 -3px 0 rgba(0,0,0,.25);
-  overflow-wrap: anywhere; hyphens: auto;
+  overflow-wrap: anywhere; hyphens: auto; letter-spacing: -.3px;
 }
 .cell.hero { padding: 0; overflow: hidden; background: #222b40; position: relative; }
 .cell.hero img { width: 100%; height: 100%; object-fit: cover; }
@@ -244,10 +259,15 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 16
     <h2 id="modeTitle">Угадай сегодняшнего героя Dota 2</h2>
     <p id="modeSub">Вводи имя героя — клетки подскажут, насколько ты близко.</p>
     <div class="search">
-      <input id="input" autocomplete="off" spellcheck="false" placeholder="Имя героя (англ. или рус.)…" aria-label="Имя героя">
+      <input id="input" autocomplete="off" spellcheck="false" placeholder="Имя героя на английском…" aria-label="Имя героя">
       <button class="go" id="goBtn" disabled>➜</button>
       <div class="suggestions" id="suggestions"></div>
     </div>
+    <label class="switch-row">
+      <input type="checkbox" id="hintsToggle">
+      <span class="switch" aria-hidden="true"></span>
+      Подсказки
+    </label>
     <div class="hints" id="hints"></div>
     <div class="hint-reveal" id="hintReveal"></div>
     <button class="giveup" id="giveUp" hidden>Сдаться</button>
@@ -279,7 +299,8 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 16
       <li><b>↑ / ↓</b> — у загаданного героя значение больше / меньше.</li>
     </ul>
     <p><b>Признаки:</b> пол, раса, основной атрибут, тип атаки, роли, дальность атаки, скорость передвижения и количество ног.</p>
-    <p><b>Подсказки:</b> после 5 попыток открывается первая буква имени, после 8 — размытый портрет.</p>
+    <p><b>Подсказки:</b> после 5 попыток открывается первая буква имени, после 8 — размытый портрет. Их можно отключить переключателем «Подсказки».</p>
+    <p>Имена героев вводятся на английском (работают и сокращения: sf, pa, wk, np…).</p>
     <p><b>Герой дня</b> одинаков для всех и меняется в полночь. В режиме <b>Бесконечный</b> можно играть сколько угодно.</p>
   </div>
 </div>
@@ -435,7 +456,7 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 16
 
     const done = finished || gaveUp;
     $("input").disabled = done;
-    $("input").placeholder = done ? "Игра окончена" : "Имя героя (англ. или рус.)…";
+    $("input").placeholder = done ? "Игра окончена" : "Имя героя на английском…";
     $("giveUp").hidden = done || mode !== "endless" || guesses.length === 0;
     renderHints(done);
     if (done) showResult(animateLast);
@@ -448,17 +469,25 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 16
       { at: 5, label: "Первая буква", key: "letter" },
       { at: 8, label: "Размытый портрет", key: "image" },
     ];
-    $("hints").innerHTML = done ? "" : hints.map(h => n >= h.at
+    $("hints").innerHTML = done || !hintsOn ? "" : hints.map(h => n >= h.at
       ? `<button class="hint open" data-hint="${h.key}">💡 ${h.label}</button>`
       : `<span class="hint">🔒 ${h.label} — через ${h.at - n}</span>`).join("");
     $("hintReveal").innerHTML = "";
   }
 
+  let hintsOn = store.get("dotadle.hints", true);
+  $("hintsToggle").checked = hintsOn;
+  $("hintsToggle").addEventListener("change", e => {
+    hintsOn = e.target.checked;
+    store.set("dotadle.hints", hintsOn);
+    renderHints(finished || gaveUp);
+  });
+
   $("hints").addEventListener("click", e => {
     const b = e.target.closest("[data-hint]");
     if (!b) return;
     $("hintReveal").innerHTML = b.dataset.hint === "letter"
-      ? `Имя героя начинается на <b style="color:var(--gold)">${esc(answer.name[0])}</b> (рус.: <b style="color:var(--gold)">${esc(answer.ru[0])}</b>)`
+      ? `Имя героя начинается на <b style="color:var(--gold)">${esc(answer.name[0])}</b>`
       : `<span class="hint-img-wrap">${portrait(answer, "")}</span>`;
   });
 
@@ -559,7 +588,7 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 16
   }
 
   // ---------- autocomplete ----------
-  const norm = s => s.toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]/g, "");
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
   let matches = [], active = 0;
 
   function search(q) {
@@ -568,7 +597,7 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 16
     const scored = [];
     for (const h of HEROES) {
       if (guesses.includes(h.id)) continue;
-      const keys = [h.name, h.ru, ...h.aliases].map(norm);
+      const keys = [h.name, ...h.aliases].map(norm);
       let best = Infinity;
       for (const k of keys) {
         if (k === n) best = Math.min(best, 0);
@@ -576,7 +605,7 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 16
         else if (k.includes(n)) best = Math.min(best, 2);
       }
       // also match start of any word, e.g. "lord" -> "Troll Warlord"
-      if (best > 1 && [h.name, h.ru].some(s => s.toLowerCase().split(/[\s'-]+/).some(w => norm(w).startsWith(n)))) best = 1;
+      if (best > 1 && h.name.toLowerCase().split(/[\s'-]+/).some(w => norm(w).startsWith(n))) best = 1;
       if (best < Infinity) scored.push([best, h]);
     }
     return scored.sort((a, b) => a[0] - b[0] || a[1].name.localeCompare(b[1].name)).slice(0, MAX_SUGGEST).map(x => x[1]);
@@ -590,7 +619,7 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 16
   function paintSuggestions() {
     $("suggestions").innerHTML = matches.map((h, i) =>
       `<div class="suggestion${i === active ? " active" : ""}" data-id="${h.id}">
-        ${portrait(h)}<div><div class="name">${esc(h.name)}</div><div class="ru">${esc(h.ru)}</div></div>
+        ${portrait(h)}<div class="name">${esc(h.name)}</div>
       </div>`).join("");
     $("goBtn").disabled = !matches.length;
   }
